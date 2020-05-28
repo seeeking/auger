@@ -1,10 +1,3 @@
-import foo
-from foo import Bar
-from foo import Foo
-import functions
-from mock import patch
-import os
-import os.path
 import properties
 from properties import Language
 from random import Random
@@ -15,13 +8,16 @@ class PropertiesTest(unittest.TestCase):
     def test_age(self):
         language_instance = Language()
         self.assertEqual(
-            language_instance.age(),
+            language_instance.age,
             26
         )
 
 
     def test_main(self):
-        pass
+        self.assertEqual(
+            Language.main,
+            None
+        )
 
 
     def test_name(self):

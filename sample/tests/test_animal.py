@@ -1,20 +1,9 @@
 import animal
 from animal import Animal
-import foo
-from foo import Bar
-from foo import Foo
-import functions
-from mock import patch
-import os
-import os.path
-import pet
-from pet import Animal
-from pet import Pet
-import properties
-from properties import Language
 import random
 from random import Random
 import unittest
+from unittest.mock import patch
 
 
 class AnimalTest(unittest.TestCase):

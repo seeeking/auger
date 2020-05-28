@@ -10,7 +10,8 @@ from auger import runtime
 
 
 def indent(n):
-    return '    ' * n
+    return ' ' * 4 * n
+
 
 class DefaultGenerator(Generator):
     def __init__(self):
@@ -26,6 +27,8 @@ class DefaultGenerator(Generator):
     def dump(self, filename, functions):
         self.output_ = []
         self.dump_tests(filename, functions)
+        print(self)
+        print(self.imports_)
         for line in open(filename):
             line = line.replace('\n', '')
             if line.startswith('import '):
@@ -35,6 +38,7 @@ class DefaultGenerator(Generator):
                 imports = [import_.strip() for import_ in line.split('import ')[1].split(',')]
                 for import_ in imports:
                     self.add_import(module, import_)
+        print(self.imports_)
         return '\n'.join(self.format_imports() + self.output_)
 
     def format_imports(self):
@@ -115,11 +119,10 @@ class DefaultGenerator(Generator):
         return mod, mod
 
     def dump_mock_decorators(self, mocks):
-        last_position = len(self.output_)
         for (code, mock) in mocks:
             definer, member = self.get_defining_item(code)
-            self.add_import('mock', 'patch')
-            self.output_.insert(last_position, indent(1) + '@patch.object(%s, \'%s\')' % (
+            self.add_import('unittest.mock', 'patch')
+            self.output_.append(indent(1) + '@patch.object(%s, \'%s\')' % (
                 self.get_declared_module_name(definer.__name__), runtime.get_code_name(code)))
 
     def dump_mock_return_values(self, mocks):
@@ -162,7 +165,7 @@ class DefaultGenerator(Generator):
             is_method = inspect.ismethod(member)
             is_static = isinstance(definer.__dict__.get(runtime.get_code_name(code)), staticmethod)
             is_mod    = isinstance(definer, types.ModuleType)
-            if isinstance(member, property) or inspect.ismethod(member):
+            if func_self is not None:
                 if not is_static:
                     typename, init, init_args = self.get_instance(self.instances, func_self)
                     if typename == "NoneType":
@@ -182,17 +185,17 @@ class DefaultGenerator(Generator):
                 target = definer.__name__
 
             # Useful for debugging
-            # print '-' * 80
-            # print 'call:   ', call
-            # print 'definer:', definer
-            # print 'member: ', member
-            # print 'target: ', target
-            # print 'name:   ', runtime.get_code_name(code)
-            # print 'ismod?: ', is_mod
-            # print 'static?:', is_static
-            # print 'method?:', is_method
-            # print 'func?:  ', is_func
-            # print '-' * 80
+            print('-' * 80)
+            print('call:   ', call)
+            print('definer:', definer)
+            print('member: ', member)
+            print('target: ', target)
+            print('name:   ', runtime.get_code_name(code))
+            print('ismod?: ', is_mod)
+            print('static?:', is_static)
+            print('method?:', is_method)
+            print('func?:  ', is_func)
+            print('-' * 80)
 
             call = '%s.%s' % (target, runtime.get_code_name(code))
             if is_method or is_func or is_static or is_mod:

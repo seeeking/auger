@@ -4,14 +4,11 @@ from __future__ import print_function
 import inspect
 import os
 import sys
-import traceback
-
 from collections import defaultdict
 
 from auger import runtime
 from auger.generator.default import DefaultGenerator
 from auger.generator.generator import get_module_name
-
 
 class magic(object):
     _file_names = None
@@ -21,9 +18,9 @@ class magic(object):
     def __init__(self, modulesOrClasses, generator=None, verbose=False, mock_substitutes=None, extra_imports=None):
         self._caller = inspect.stack()[1][1]
         self._file_names = list(map(os.path.normpath, list(map(self._get_file, modulesOrClasses))))
-        self._generator = generator or DefaultGenerator()
-        self._generator.set_mock_substitutes(mock_substitutes or {})
-        self._generator.set_extra_imports(extra_imports or {})
+        self.generator = generator
+        self.mock_substitutes = mock_substitutes
+        self.extra_imports = extra_imports
         self.modulesOrClasses = set(modulesOrClasses)
         self.verbose = verbose
 
@@ -43,6 +40,7 @@ class magic(object):
 
     def _handle_call(self, code, locals_dict, args, caller=None):
         function = self._calls[code]
+        print(function)
         if caller:
             self._calls[caller].add_mock(code, function)
         params = list(code.co_varnames)[:code.co_argcount]
@@ -63,7 +61,10 @@ class magic(object):
     def __exit__(self, exception_type, value, tb):
         sys.settrace(None)
         for filename, functions in self.group_by_file(self._file_names, self._calls).items():
-            test = self._generator.dump(filename, functions)
+            _generator = self.generator or DefaultGenerator()
+            _generator.set_mock_substitutes(self.mock_substitutes or {})
+            _generator.set_extra_imports(self.extra_imports or {})
+            test = _generator.dump(filename, functions)
             if self.verbose:
                 print('=' * 47 + ' Auger ' + '=' * 46)
                 print(test)
@@ -71,7 +72,7 @@ class magic(object):
             else:
                 modname = get_module_name(filename)
                 if modname == '__main__':
-                    modname = filename.replace('.py', '').capitalize();
+                    modname = filename.replace('.py', '').capitalize()
                 root = filename
                 for _ in modname.split('.'):
                     root = os.path.dirname(root)

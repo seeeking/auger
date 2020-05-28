@@ -1,5 +1,3 @@
-import auger
-
 class Language(object):
 
   def __init__(self):

@@ -4,6 +4,7 @@ import sys
 PYTHON2 = getattr(sys.version_info, "major", 0) == 2
 PYTHON3 = getattr(sys.version_info, "major", 0) == 3
 
+
 class Function(object):
     def __init__(self):
         self.calls = defaultdict(list)

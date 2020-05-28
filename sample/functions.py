@@ -10,9 +10,9 @@ def func_three(a):
     return func_two(a)
 
 def main():
-    print func_one()
-    print func_two('C:/temp')
-    print func_three('C:/temp')
+    print(func_one())
+    print(func_two('C:/temp'))
+    print(func_three('C:/temp'))
 
 if __name__ == '__main__':
     main()
