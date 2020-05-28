@@ -1,5 +1,6 @@
 from collections import defaultdict
 import sys
+import types
 
 PYTHON2 = getattr(sys.version_info, "major", 0) == 2
 PYTHON3 = getattr(sys.version_info, "major", 0) == 3
@@ -19,10 +20,12 @@ class Function(object):
         self.calls[repr(callArgs)].append((callArgs, value))
 
     def add_mock(self, code, function):
-        self.mocks.append((code, function))
+        if (code, function) not in self.mocks:
+            self.mocks.append((code, function))
 
     def __str__(self):
-        return 'Function(%s)' % self.calls
+        return 'Function:\n' + '\n'.join([f'{a}: {str(getattr(self, a))}' for a in dir(self) if not a.startswith('__')
+                                          and not isinstance(getattr(self, a), types.MethodType) ])
 
 def get_code(func):
     if PYTHON2: return getattr(func, "func_code", getattr(getattr(func, "im_func", None), "func_code", None))

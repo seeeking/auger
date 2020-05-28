@@ -69,7 +69,7 @@ class DefaultGenerator(Generator):
 
     @staticmethod
     def get_mocks(function):
-        return set(function.mocks)
+        return function.mocks
 
     @staticmethod
     def get_mock_args(mocks):
@@ -119,7 +119,7 @@ class DefaultGenerator(Generator):
         return mod, mod
 
     def dump_mock_decorators(self, mocks):
-        for (code, mock) in mocks:
+        for (code, mock) in reversed(mocks):
             definer, member = self.get_defining_item(code)
             self.add_import('unittest.mock', 'patch')
             self.output_.append(indent(1) + '@patch.object(%s, \'%s\')' % (

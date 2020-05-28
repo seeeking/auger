@@ -9,6 +9,9 @@ class Pet(Animal):
     def get_name(self):
         return self._name
 
+    def set_age(self, age):
+        self._age = age
+
     @staticmethod
     def lower(s):
         return s.lower()
