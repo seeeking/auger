@@ -10,7 +10,7 @@ def init_module_names():
     file_to_module_name.update(dict(
         (getattr(mod, '__file__').replace('.pyc', '.py'), name)
         for name, mod in modules
-        if hasattr(mod, '__file__')
+        if hasattr(mod, '__file__') and getattr(mod, '__file__') is not None
     ))
 
 def get_module_name(filename):
