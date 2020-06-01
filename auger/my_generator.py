@@ -2,6 +2,7 @@ import inspect
 import random
 import sys
 import traceback
+import string
 
 from auger import runtime
 from auger.generator.generator import Generator
@@ -175,16 +176,18 @@ class DefaultGenerator(Generator):
     def _assert_equals(expected_str, actual_str):
         return ''.join([
             indent(2),
-            'self.assertEquals(\n',
+            'self.assertEqual(\n',
             indent(3),
             f'{expected_str},\n',
             indent(3),
             f'{actual_str}\n',
             indent(2),
-            ')\n'
+            ')'
         ])
 
     def _write_descrialize(self, v):
+        if v.direct:
+            return self.configs['converter'].deserialize(v)
         return f'{self.converter}.deserialize({DefaultGenerator._quote(v[0])}, {DefaultGenerator._quote(v[1])})'
 
     @staticmethod
@@ -192,7 +195,7 @@ class DefaultGenerator(Generator):
         return '"' + string_value.replace('"', '\\"') + '"'
 
     def dump_tests(self, filename, functions):
-        self.collect_instances(functions)
+        # self.collect_instances(functions)
         self.output_.append('')
         self.output_.append('')
         self.output_.append('class %s(unittest.TestCase):' % self.get_testname(filename))
@@ -204,8 +207,9 @@ class DefaultGenerator(Generator):
             print(code)
             print(function)
             if function.calls:
-                self.output_.append(indent(1) + 'def test_%s(self):' % (runtime.get_code_name(code)))
                 try:
+                    self.output_.append(indent(1) +
+                                        f'def test_{runtime.get_code_name(code)}_{"".join(random.choices(string.ascii_letters + string.digits, k=4))}(self):')
                     self.dump_call(filename, code, random.choice(function.calls))
                 except:
                     traceback.print_exc()
