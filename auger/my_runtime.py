@@ -1,14 +1,10 @@
 import sys
 import types
-import importlib.util
 
 
 class Function(object):
-    def __init__(self, converter_init_file):
-        spec = importlib.util.spec_from_file_location('auger_converter', converter_init_file)
-        converter_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(converter_module)
-        self.converter = converter_module.converter
+    def __init__(self, converter):
+        self.converter = converter
         self.calls = []
         self.work = []
 

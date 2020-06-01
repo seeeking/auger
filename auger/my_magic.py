@@ -1,3 +1,4 @@
+import importlib.util
 import inspect
 import logging
 import os
@@ -22,9 +23,7 @@ class Magic(object):
 
         self.output_path = os.path.join(source_path, 'tests')
 
-        self.converter_init_file = converter_init_file
-        os.makedirs(os.path.join(self.output_path, 'auger'), exist_ok=True)
-        converter_path = copy2(converter_init_file, os.path.join(self.output_path, 'auger', 'auger_converter.py'))
+        self._copy_and_get_converter(converter_init_file)
         if extra_files:
             for file in extra_files:
                 copy2(file, os.path.join(self.output_path, 'auger'))
@@ -33,12 +32,22 @@ class Magic(object):
         self.extra_imports = [('.auger.auger_converter', 'converter')]
         self.verbose = verbose
         self.configs = {
-            'converter_init_file': converter_path
+            'converter_init_file': self.converter_path,
+            'converter': self.converter
         }
         self._calls = defaultdict(self._empty_function)
 
+    def _copy_and_get_converter(self, converter_init_file):
+        os.makedirs(os.path.join(self.output_path, 'auger'), exist_ok=True)
+        self.converter_path = copy2(converter_init_file, os.path.join(self.output_path, 'auger', 'auger_converter.py'))
+        spec = importlib.util.spec_from_file_location('auger_converter', self.converter_path)
+        converter_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(converter_module)
+        self.converter = converter_module.converter
+
+
     def _empty_function(self):
-        return my_runtime.Function(self.converter_init_file)
+        return my_runtime.Function(self.converter)
 
     @staticmethod
     def _list_module_files(source_path):

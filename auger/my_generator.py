@@ -8,6 +8,7 @@ from auger.generator.generator import Generator
 from auger.generator.generator import get_module_name
 
 
+# TODO change indent
 def indent(n):
     return ' ' * 4 * n
 
@@ -16,7 +17,7 @@ class DefaultGenerator(Generator):
     def __init__(self, configs):
         Generator.__init__(self)
         self.output_ = []
-        self.imports_ = set([('unittest',)])
+        self.imports_ = {('unittest',)}
         self.instances = {}
         self.configs = configs
         self.converter = 'converter'
@@ -53,17 +54,16 @@ class DefaultGenerator(Generator):
 
     def collect_instances(self, functions):
         for code, function in filter(lambda fn: runtime.get_code_name(fn[0]) == '__init__', functions):
-            for _, calls in function.calls.items():
-                for (args, _) in calls[:1]:
-                    func_self = args['self']
-                    func_self_type = func_self.__class__
-                    for base in func_self.__class__.__bases__:
-                        for _, init in filter(lambda member: member[0] == '__init__', inspect.getmembers(base)):
-                            if getattr(init, "__code__", None) == code:
-                                func_self_type = base
-                    mod = func_self_type.__module__
-                    self.add_import(mod, func_self_type.__name__)
-                    self.instances[self.get_object_id(type(func_self), func_self)] = (func_self_type.__name__, code, args)
+            for (args, _, _) in function.calls[:1]:
+                func_self = args['self']
+                func_self_type = func_self.__class__
+                for base in func_self.__class__.__bases__:
+                    for _, init in filter(lambda member: member[0] == '__init__', inspect.getmembers(base)):
+                        if getattr(init, "__code__", None) == code:
+                            func_self_type = base
+                mod = func_self_type.__module__
+                self.add_import(mod, func_self_type.__name__)
+                self.instances[self.get_object_id(type(func_self), func_self)] = (func_self_type.__name__, code, args)
 
     def find_module(self, code):
         for modname, mod in sys.modules.items():
@@ -118,9 +118,6 @@ class DefaultGenerator(Generator):
             self.add_import(modname)
         return mod, mod
 
-    # def dump_create_instance(self, typename, code, init_args):
-    #     self.output_.append(indent(2) + '%s_instance = %s' % (typename.lower(), self.get_initializer(typename, code, init_args)))
-
     def get_initializer(self, typename, code=None, init_args=None):
         if code and init_args:
             args, varargs, kwargs = inspect.getargs(code)
@@ -141,10 +138,6 @@ class DefaultGenerator(Generator):
         definer, member = self.get_defining_item(code)
         print(call)
         before_args, return_value, after_args = call
-        is_func   = inspect.isfunction(member)
-        # is_method = inspect.ismethod(member)
-        # is_static = isinstance(definer.__dict__.get(runtime.get_code_name(code)), staticmethod)
-        # is_mod    = isinstance(definer, types.ModuleType)
 
         self.add_import(filename)
         target = definer.__name__
@@ -156,34 +149,47 @@ class DefaultGenerator(Generator):
         print('member: ', member)
         print('target: ', target)
         print('name:   ', runtime.get_code_name(code))
-        print('func?:  ', is_func)
         print('-' * 80)
 
-        call = 'expected = %s.%s' % (target, runtime.get_code_name(code))
-        print(before_args)
-        if is_func:
-            call += '(%s)' % (
-                ','.join(['%s=%s' % (k, self._write_descrialize(v)) for k, v in before_args.items()]),
-            )
+        for k, v in before_args.items():
+            self.output_.append(indent(2) + f'arg_{k} = {self._write_descrialize(v)}')
+
+        call = indent(2) + 'actual_ret = %s.%s' % (target, runtime.get_code_name(code))
+        call += '(%s)' % (
+            ','.join([f'{k}=arg_{k}' for k in before_args.keys()]),
+        )
         self.output_.append(call)
-        self.output_.append(''.join([
+
+        self.output_.append('')
+        self.output_.append(indent(2) + '# check return value')
+        self.output_.append(self._assert_equals('actual_ret', self._write_descrialize(return_value)))
+
+        self.output_.append(indent(2) + '# check parameter mutation')
+        for k, v in after_args.items():
+            self.output_.append(indent(2) + f'expected_arg_{k} = {self._write_descrialize(v)}')
+            self.output_.append(self._assert_equals(f'expected_arg_{k}', f'arg_{k}'))
+
+        self.output_.append('')
+
+    @staticmethod
+    def _assert_equals(expected_str, actual_str):
+        return ''.join([
             indent(2),
             'self.assertEquals(\n',
             indent(3),
-            'expected,\n',
+            f'{expected_str},\n',
             indent(3),
-            '%s\n' % self._write_descrialize(return_value),
+            f'{actual_str}\n',
             indent(2),
             ')\n'
-        ]))
-        self.output_.append('')
+        ])
 
     def _write_descrialize(self, v):
         return f'{self.converter}.deserialize({DefaultGenerator._quote(v[0])}, {DefaultGenerator._quote(v[1])})'
 
     @staticmethod
     def _quote(string_value):
-        return '"' + string_value.replace('"', '\"') + '"'
+        return '"' + string_value.replace('"', '\\"') + '"'
 
     def dump_tests(self, filename, functions):
         self.collect_instances(functions)
