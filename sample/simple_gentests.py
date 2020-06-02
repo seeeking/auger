@@ -1,8 +1,8 @@
 from auger.my_magic import Magic
-from sample_code.simple import *
+from simple_examples.simple import *
 
 
-with Magic('sample_code', 'auger/object_converter.py'):
+with Magic('simple_examples', 'auger/object_converter.py'):
     add("hello", "world")
     origin = {'a': 'hello', 'b': 'world'}
     to_update = {'a': 'Hallo', 'b': ' ', 'c': 'Welt'}

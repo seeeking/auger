@@ -3,6 +3,8 @@ import random
 import sys
 import traceback
 import string
+from shutil import move
+import os
 
 from auger import runtime
 from auger.generator.generator import Generator
@@ -26,7 +28,6 @@ class DefaultGenerator(Generator):
     def set_extra_imports(self, imports):
         for imp in imports:
             self.imports_.add(imp)
-
 
     def dump(self, filename, functions):
         self.output_ = []
@@ -163,20 +164,25 @@ class DefaultGenerator(Generator):
 
         self.output_.append('')
         self.output_.append(indent(2) + '# check return value')
-        self.output_.append(self._assert_equals('actual_ret', self._write_descrialize(return_value)))
+        self.output_.append(self._assert_equals('actual_ret', self._write_descrialize(return_value), return_value.comparator))
 
         self.output_.append(indent(2) + '# check parameter mutation')
         for k, v in after_args.items():
             self.output_.append(indent(2) + f'expected_arg_{k} = {self._write_descrialize(v)}')
-            self.output_.append(self._assert_equals(f'expected_arg_{k}', f'arg_{k}'))
+            self.output_.append(self._assert_equals(f'expected_arg_{k}', f'arg_{k}', v.comparator))
 
         self.output_.append('')
 
-    @staticmethod
-    def _assert_equals(expected_str, actual_str):
+    def _assert_equals(self, expected_str, actual_str, comparator):
+        if comparator is None:
+            comparator = 'self.assertEqual'
+        else:
+            # TODO consider other cases, and it will be better if we can use imports local to functions
+            self.add_import(comparator.__module__, comparator.__name__)
+            comparator = comparator.__name__
         return ''.join([
             indent(2),
-            'self.assertEqual(\n',
+            f'{comparator}(\n',
             indent(3),
             f'{expected_str},\n',
             indent(3),
@@ -187,8 +193,11 @@ class DefaultGenerator(Generator):
 
     def _write_descrialize(self, v):
         if v.direct:
-            return self.configs['converter'].deserialize(v)
-        return f'{self.converter}.deserialize({DefaultGenerator._quote(v[0])}, {DefaultGenerator._quote(v[1])})'
+            return self.configs['converter'].deserialize(v[0], v[1])
+        else:
+            # TODO this part is so bad, improve it using (maybe) suggestions here https://stackoverflow.com/a/38839418/4237785
+            move(v[1], os.path.join(self.configs['output_path'], 'fixtures', v[1]))
+            return f'{self.converter}.deserialize({DefaultGenerator._quote(v[0])}, {DefaultGenerator._quote(os.path.join("tests", "fixtures", v[1]))})'
 
     @staticmethod
     def _quote(string_value):

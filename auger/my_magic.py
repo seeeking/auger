@@ -16,12 +16,15 @@ logger.setLevel(level=logging.DEBUG)
 
 class Magic(object):
     def __init__(self, source_path, converter_init_file, extra_files=None,
+                 source_file_to_exclude=None,
                  verbose=False, mock_substitutes=None):
         self._caller = inspect.stack()[1][1]
-        self._file_names = Magic._list_module_files(source_path)
+        self._file_names = Magic._list_module_files(source_path, source_file_to_exclude)
         logger.debug(f'Included files are {",".join(self._file_names)}')
 
         self.output_path = os.path.join(source_path, 'tests')
+        os.makedirs(self.output_path, exist_ok=True)
+        os.makedirs(os.path.join(self.output_path, 'fixtures'), exist_ok=True)
 
         self._copy_and_get_converter(converter_init_file)
         if extra_files:
@@ -33,7 +36,8 @@ class Magic(object):
         self.verbose = verbose
         self.configs = {
             'converter_init_file': self.converter_path,
-            'converter': self.converter
+            'converter': self.converter,
+            'output_path': self.output_path
         }
         self._calls = defaultdict(self._empty_function)
 
@@ -50,7 +54,13 @@ class Magic(object):
         return my_runtime.Function(self.converter)
 
     @staticmethod
-    def _list_module_files(source_path):
+    def _list_module_files(source_path, source_file_to_exclude):
+        if source_file_to_exclude:
+            source_file_to_exclude = map(os.path.abspath, source_file_to_exclude)
+        else:
+            source_file_to_exclude = []
+
+        print(source_file_to_exclude)
         files = []
         for (dirpath, dirnames, filenames) in os.walk(source_path):
             for dirname in dirnames:
@@ -58,7 +68,7 @@ class Magic(object):
                 if dirname == 'tests':
                     dirnames.remove(dirname)
             for name in filenames:
-                if name.endswith('.py'):
+                if name.endswith('.py') and name not in source_file_to_exclude:
                     files.append(os.path.abspath(os.path.join(dirpath, name)))
         return files
 
@@ -119,9 +129,9 @@ class Magic(object):
     def _trace(self, frame, event, ret):
         handler = getattr(self, '_handle_' + event)
         top = frame.f_code.co_filename
-        caller = frame.f_back.f_code.co_filename
+        # caller = frame.f_back.f_code.co_filename
         if top in self._file_names:
             handler(frame.f_code, frame.f_locals, ret)
-        if caller in self._file_names and top != caller:
-            handler(frame.f_code, frame.f_locals, ret, frame.f_back.f_code)
+        # if caller in self._file_names and top != caller:
+        #     handler(frame.f_code, frame.f_locals, ret, frame.f_back.f_code)
         return self._trace

@@ -1,16 +1,16 @@
 from .auger.auger_converter import converter
-import sample_code.simple
-from sample_code.simple import Counter
-from sample_code.simple import add
-from sample_code.simple import update_dict
+import simple_examples.simple
+from simple_examples.simple import Counter
+from simple_examples.simple import add
+from simple_examples.simple import update_dict
 import unittest
 
 
 class SimpleTest(unittest.TestCase):
-    def test_add_SMBJ(self):
+    def test_add_iEFz(self):
         arg_a = "hello"
         arg_b = "world"
-        actual_ret = sample_code.simple.add(a=arg_a,b=arg_b)
+        actual_ret = simple_examples.simple.add(a=arg_a,b=arg_b)
 
         # check return value
         self.assertEqual(
@@ -29,8 +29,8 @@ class SimpleTest(unittest.TestCase):
             arg_b
         )
 
-    def test_add_N1J6(self):
-        arg_self = {}
+    def test_add_vkGn(self):
+        arg_self = {'counter': 1}
         actual_ret = Counter.add(self=arg_self)
 
         # check return value
@@ -39,13 +39,13 @@ class SimpleTest(unittest.TestCase):
             None
         )
         # check parameter mutation
-        expected_arg_self = {'counter': 1}
+        expected_arg_self = {'counter': 2}
         self.assertEqual(
             expected_arg_self,
             arg_self
         )
 
-    def test_clear_Ppcg(self):
+    def test_clear_a1b5(self):
         arg_self = {'counter': 2}
         actual_ret = Counter.clear(self=arg_self)
 
@@ -61,10 +61,10 @@ class SimpleTest(unittest.TestCase):
             arg_self
         )
 
-    def test_update_dict_YQm8(self):
+    def test_update_dict_CaN5(self):
         arg_origin = {'a': 'hello', 'b': 'world'}
         arg_to_update = {'a': 'Hallo', 'b': ' ', 'c': 'Welt'}
-        actual_ret = sample_code.simple.update_dict(origin=arg_origin,to_update=arg_to_update)
+        actual_ret = simple_examples.simple.update_dict(origin=arg_origin,to_update=arg_to_update)
 
         # check return value
         self.assertEqual(

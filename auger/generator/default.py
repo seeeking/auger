@@ -27,8 +27,6 @@ class DefaultGenerator(Generator):
     def dump(self, filename, functions):
         self.output_ = []
         self.dump_tests(filename, functions)
-        print(self)
-        print(self.imports_)
         for line in open(filename):
             line = line.replace('\n', '')
             if line.startswith('import '):
@@ -38,7 +36,6 @@ class DefaultGenerator(Generator):
                 imports = [import_.strip() for import_ in line.split('import ')[1].split(',')]
                 for import_ in imports:
                     self.add_import(module, import_)
-        print(self.imports_)
         return '\n'.join(self.format_imports() + self.output_)
 
     def format_imports(self):
@@ -88,40 +85,50 @@ class DefaultGenerator(Generator):
         filename = runtime.get_code_filename(code)
         lineno = runtime.get_code_lineno(code)
         modname, mod = self.find_module(code)
+        print(filename, lineno, modname, mod)
+
         for _,clazz in inspect.getmembers(mod, predicate=inspect.isclass):
+            print(clazz)
             for _,member in inspect.getmembers(clazz, predicate=inspect.ismethod):
                 member_code = runtime.get_code(member)
                 member_filename = runtime.get_code_filename(member_code)
                 member_lineno = runtime.get_code_lineno(member_code)
+                print(indent(1), member_filename, member_lineno)
                 if filename == member_filename and lineno == member_lineno:
                     self.add_import(modname, clazz.__name__)
                     return clazz, member
             for _,member in inspect.getmembers(clazz, predicate=lambda member: isinstance(member, property)):
                 self.add_import(modname, clazz.__name__)
+                print(indent(4), member_filename, member_lineno)
                 return clazz, member
             for _,member in inspect.getmembers(clazz, predicate=inspect.isfunction):
                 member_code = runtime.get_code(member)
                 member_filename = runtime.get_code_filename(member_code)
                 member_lineno = runtime.get_code_lineno(member_code)
+                print(indent(2), member_filename, member_lineno)
                 if filename == member_filename and lineno == member_lineno:
                     self.add_import(modname, clazz.__name__)
                     return clazz, member
-            for _,member in inspect.getmembers(mod, predicate=inspect.isfunction):
-                # Module-level function support, note the difference in return statement
-                member_code = runtime.get_code(member)
-                member_filename = runtime.get_code_filename(member_code)
-                member_lineno = runtime.get_code_lineno(member_code)
-                if filename == member_filename and lineno == member_lineno:
-                    self.add_import(modname, clazz.__name__)
-                    return mod, member
+
+        # TODO this is most likely not correct or not necessary
+        for _,member in inspect.getmembers(mod, predicate=inspect.isfunction):
+            # Module-level function support, note the difference in return statement
+            member_code = runtime.get_code(member)
+            member_filename = runtime.get_code_filename(member_code)
+            member_lineno = runtime.get_code_lineno(member_code)
+            print(indent(3), member_filename, member_lineno)
+            if filename == member_filename and lineno == member_lineno:
+                self.add_import(modname, member.__name__)
+                return mod, member
         if modname != '__main__':
             self.add_import(modname)
         return mod, mod
 
     def dump_mock_decorators(self, mocks):
+        if mocks:
+            self.add_import('unittest.mock', 'patch')
         for (code, mock) in reversed(mocks):
             definer, member = self.get_defining_item(code)
-            self.add_import('unittest.mock', 'patch')
             self.output_.append(indent(1) + '@patch.object(%s, \'%s\')' % (
                 self.get_declared_module_name(definer.__name__), runtime.get_code_name(code)))
 
@@ -224,8 +231,12 @@ class DefaultGenerator(Generator):
         functions = filter(lambda fn: runtime.get_code_name(fn[0]) != '__init__', functions)
         functions = sorted(functions, key=lambda fn: runtime.get_code_name(fn[0]))
         for code, function in functions:
+            print("=" * 80)
+            print("processing...")
+            print(code)
+            print(function)
             if function.calls:
-                mocks = self.get_mocks(function)
+                mocks = function.mocks
                 self.dump_mock_decorators(mocks)
                 self.output_.append(indent(1) + 'def test_%s(self%s):' % (runtime.get_code_name(code), self.get_mock_args(mocks)))
                 self.dump_mock_return_values(mocks)
@@ -244,6 +255,8 @@ class DefaultGenerator(Generator):
                 mod = sys.modules[module_name]
                 if not hasattr(mod, part_name):
                     return
+
+        print(module_name, part_name)
         self.imports_.add((module_name, part_name) if part_name else (module_name,))
 
     @staticmethod

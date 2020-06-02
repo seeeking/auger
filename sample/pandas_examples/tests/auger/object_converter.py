@@ -1,11 +1,11 @@
 import json
 from collections import namedtuple
-from typing import Tuple
 
 # csv.field_size_limit(sys.maxsize)
 
 
-SerializeResult = namedtuple('SerializeResult', ['type_name', 'value', 'direct'])
+# direct means you have a representation that can appear directly in code
+SerializeResult = namedtuple('SerializeResult', ['type_name', 'value', 'direct', 'comparator'])
 
 
 def _quote(a):
@@ -32,15 +32,15 @@ class Converter:
             if isinstance(object_data, funcs[0]):
                 return funcs[1](object_data)
 
-        raise Exception(f'Unsupported data type {type(object_data)}')
+        raise Exception(f'Unsupported data type {type(object_data)}, {object_data}')
 
-    def deserialize(self, result: SerializeResult):
-        funcs = self.supported_types[result.type_name]
-        return funcs[2](result.value)
+    def deserialize(self, type_name, value):
+        funcs = self.supported_types[type_name]
+        return funcs[2](value)
 
 
 converter = Converter()
-converter.register_type('str', str, lambda a: SerializeResult('str', a, True), lambda a: _quote(a))
-converter.register_type('None', type(None), lambda a: SerializeResult('None', '', True), lambda s: None)
-converter.register_type('dict', dict, lambda a: SerializeResult('dict', json.dumps(a), True), lambda a: json.loads(a))
+converter.register_type('str', str, lambda a: SerializeResult('str', a, True, None), lambda a: _quote(a))
+converter.register_type('None', type(None), lambda a: SerializeResult('None', '', True, None), lambda s: None)
+converter.register_type('dict', dict, lambda a: SerializeResult('dict', json.dumps(a), True, None), lambda a: json.loads(a))
 
