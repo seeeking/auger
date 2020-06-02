@@ -21,6 +21,10 @@ def _read_pickle(f):
 
 # I'm not very comfortable with this, but it seems okay, importing actually imports the value instead of the reference
 converter = object_converter.converter
+
+# Another way is to write the function that reads pickle directly into the test code,
+# I think the result will actually look more beautiful
+# but it is also more 'thinking code as string instead of code' work
 converter.register_type('pd.DataFrame',
                         pd.DataFrame,
                         lambda df: object_converter.SerializeResult(

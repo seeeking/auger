@@ -6,7 +6,7 @@ import unittest
 
 
 class FuncsTest(unittest.TestCase):
-    def test_add_H9PY(self):
+    def test_add_mm7M(self):
         arg_a = 'hello'
         arg_b = 'world'
         actual_ret = simple_examples.funcs.add(a=arg_a,b=arg_b)
@@ -28,7 +28,7 @@ class FuncsTest(unittest.TestCase):
             arg_b
         )
 
-    def test_update_dict_vvtQ(self):
+    def test_update_dict_OGG1(self):
         arg_origin = {'a': 'hello', 'b': 'world'}
         arg_to_update = {'a': 'Hallo', 'b': ' ', 'c': 'Welt'}
         actual_ret = simple_examples.funcs.update_dict(origin=arg_origin,to_update=arg_to_update)

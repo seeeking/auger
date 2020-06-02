@@ -5,7 +5,23 @@ import unittest
 
 
 class ClazzTest(unittest.TestCase):
-    def test_add_X9Jd(self):
+    def test_add_YjYq(self):
+        arg_self = {}
+        actual_ret = Counter.add(self=arg_self)
+
+        # check return value
+        self.assertEqual(
+            actual_ret,
+            None
+        )
+        # check parameter mutation
+        expected_arg_self = {'counter': 1}
+        self.assertEqual(
+            expected_arg_self,
+            arg_self
+        )
+
+    def test_add_OrvP(self):
         arg_self = {'counter': 1}
         actual_ret = Counter.add(self=arg_self)
 
@@ -21,7 +37,7 @@ class ClazzTest(unittest.TestCase):
             arg_self
         )
 
-    def test_clear_TcNn(self):
+    def test_clear_Eny9(self):
         arg_self = {'counter': 2}
         actual_ret = Counter.clear(self=arg_self)
 

@@ -5,7 +5,6 @@ from typing import Union
 import pandas as pd
 
 import object_converter
-from pandas.util.testing import assert_frame_equal, assert_series_equal
 
 
 def _write_pickle(df: Union[pd.DataFrame, pd.Series]):
@@ -22,13 +21,16 @@ def _read_pickle(f):
 
 # I'm not very comfortable with this, but it seems okay, importing actually imports the value instead of the reference
 converter = object_converter.converter
+
+# Another way is to write the function that reads pickle directly into the test code,
+# I think the result will actually look more beautiful
+# but it is also more 'thinking code as string instead of code' work
 converter.register_type('pd.DataFrame',
                         pd.DataFrame,
                         lambda df: object_converter.SerializeResult(
                             'pd.DataFrame',
                             _write_pickle(df),
-                            False,
-                            assert_frame_equal),
+                            False),
                         lambda f: _read_pickle(f))
 
 converter.register_type('pd.Series',
@@ -36,6 +38,5 @@ converter.register_type('pd.Series',
                         lambda df: object_converter.SerializeResult(
                             'pd.Series',
                             _write_pickle(df),
-                            False,
-                            assert_series_equal),
+                            False),
                         lambda f: _read_pickle(f))

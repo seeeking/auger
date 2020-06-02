@@ -1,15 +1,19 @@
 import inspect
-import random
-import sys
-import traceback
-import string
-from shutil import move
 import os
+import random
+import string
+import sys
+from shutil import move
+import logging
 
 from auger import runtime
 from auger.generator.generator import Generator
 from auger.generator.generator import get_module_name
 
+
+logger = logging.getLogger(__file__)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+logger.setLevel(level=logging.DEBUG)
 
 # TODO change indent
 def indent(n):
@@ -41,11 +45,10 @@ class DefaultGenerator(Generator):
                 imports = [import_.strip() for import_ in line.split('import ')[1].split(',')]
                 for import_ in imports:
                     self.add_import(module, import_)
-        return '\n'.join(self.format_imports() + self.output_)
+        return '\n'.join(self.format_imports(self.imports_) + self.output_)
 
-    def format_imports(self):
-        imports = sorted(self.imports_)
-
+    def format_imports(self, imports):
+        imports = sorted(imports)
         def format(imp):
             mod = self.get_declared_module_name(imp[0])
             if len(imp) == 2:
@@ -81,27 +84,27 @@ class DefaultGenerator(Generator):
         filename = runtime.get_code_filename(code)
         lineno = runtime.get_code_lineno(code)
         modname, mod = self.find_module(code)
-        print(filename, lineno, modname, mod)
+        # logger.debug(filename, lineno, modname, mod)
 
         for _,clazz in inspect.getmembers(mod, predicate=inspect.isclass):
-            print(clazz)
+            logger.debug(clazz)
             for _,member in inspect.getmembers(clazz, predicate=inspect.ismethod):
                 member_code = runtime.get_code(member)
                 member_filename = runtime.get_code_filename(member_code)
                 member_lineno = runtime.get_code_lineno(member_code)
-                print(indent(1), member_filename, member_lineno)
+                # logger.debug(indent(1), member_filename, member_lineno)
                 if filename == member_filename and lineno == member_lineno:
                     self.add_import(modname, clazz.__name__)
                     return clazz, member
             for _,member in inspect.getmembers(clazz, predicate=lambda member: isinstance(member, property)):
                 self.add_import(modname, clazz.__name__)
-                print(indent(4), member_filename, member_lineno)
+                # logger.debug(indent(4), member_filename, member_lineno)
                 return clazz, member
             for _,member in inspect.getmembers(clazz, predicate=inspect.isfunction):
                 member_code = runtime.get_code(member)
                 member_filename = runtime.get_code_filename(member_code)
                 member_lineno = runtime.get_code_lineno(member_code)
-                print(indent(2), member_filename, member_lineno)
+                # logger.debug(indent(2), member_filename, member_lineno)
                 if filename == member_filename and lineno == member_lineno:
                     self.add_import(modname, clazz.__name__)
                     return clazz, member
@@ -112,7 +115,7 @@ class DefaultGenerator(Generator):
             member_code = runtime.get_code(member)
             member_filename = runtime.get_code_filename(member_code)
             member_lineno = runtime.get_code_lineno(member_code)
-            print(indent(3), member_filename, member_lineno)
+            # logger.debug(indent(3), member_filename, member_lineno)
             if filename == member_filename and lineno == member_lineno:
                 self.add_import(modname, member.__name__)
                 return mod, member
@@ -137,41 +140,43 @@ class DefaultGenerator(Generator):
         return instances.get(self.get_object_id(_type, func_self)) or (func_self.__class__.__name__, _type, {})
 
     def dump_call(self, filename, code, call):
+        output_ = [indent(1) +
+                   f'def test_{runtime.get_code_name(code)}_{"".join(random.choices(string.ascii_letters + string.digits, k=4))}(self):']
         definer, member = self.get_defining_item(code)
-        print(call)
         before_args, return_value, after_args = call
 
         self.add_import(filename)
         target = definer.__name__
 
         # Useful for debugging
-        print('-' * 80)
-        print('call:   ', call)
-        print('definer:', definer)
-        print('member: ', member)
-        print('target: ', target)
-        print('name:   ', runtime.get_code_name(code))
-        print('-' * 80)
+        logger.debug('-' * 80)
+        logger.debug(f'call:   {call}')
+        logger.debug(f'definer: {definer}')
+        logger.debug(f'member: {member}')
+        logger.debug(f'target: {target}')
+        logger.debug(f'name:   {runtime.get_code_name(code)}')
+        logger.debug('-' * 80)
 
         for k, v in before_args.items():
-            self.output_.append(indent(2) + f'arg_{k} = {self._write_descrialize(v)}')
+            output_.append(indent(2) + f'arg_{k} = {self._write_descrialize(v)}')
 
         call = indent(2) + 'actual_ret = %s.%s' % (target, runtime.get_code_name(code))
         call += '(%s)' % (
             ','.join([f'{k}=arg_{k}' for k in before_args.keys()]),
         )
-        self.output_.append(call)
+        output_.append(call)
 
-        self.output_.append('')
-        self.output_.append(indent(2) + '# check return value')
-        self.output_.append(self._assert_equals('actual_ret', self._write_descrialize(return_value), return_value.type_name))
+        output_.append('')
+        output_.append(indent(2) + '# check return value')
+        output_ += self._assert_equals('actual_ret', self._write_descrialize(return_value), return_value.type_name)
 
-        self.output_.append(indent(2) + '# check parameter mutation')
+        output_.append(indent(2) + '# check parameter mutation')
         for k, v in after_args.items():
-            self.output_.append(indent(2) + f'expected_arg_{k} = {self._write_descrialize(v)}')
-            self.output_.append(self._assert_equals(f'expected_arg_{k}', f'arg_{k}', v.type_name))
+            output_.append(indent(2) + f'expected_arg_{k} = {self._write_descrialize(v)}')
+            output_ += self._assert_equals(f'expected_arg_{k}', f'arg_{k}', v.type_name)
 
-        self.output_.append('')
+        output_.append('')
+        return output_
 
     def _assert_equals(self, expected_str, actual_str, type_name):
         comparator = self.comparators[type_name]
@@ -179,16 +184,12 @@ class DefaultGenerator(Generator):
         if comparator.additional_imports:
             self.add_import(*comparator.additional_imports)
         comparator = comparator.function_name
-        return ''.join([
-            indent(2),
-            f'{comparator}(\n',
-            indent(3),
-            f'{expected_str},\n',
-            indent(3),
-            f'{actual_str}\n',
-            indent(2),
-            ')'
-        ])
+        return [
+            f'{indent(2)}{comparator}(',
+            f'{indent(3)}{expected_str},',
+            f'{indent(3)}{actual_str}',
+            f'{indent(2)})'
+        ]
 
     def _write_descrialize(self, v):
         if v.direct:
@@ -210,17 +211,8 @@ class DefaultGenerator(Generator):
         functions = filter(lambda fn: runtime.get_code_name(fn[0]) != '__init__', functions)
         functions = sorted(functions, key=lambda fn: runtime.get_code_name(fn[0]))
         for code, function in functions:
-            print("=" * 80)
-            print("processing...")
-            print(code)
-            print(function)
-            if function.calls:
-                try:
-                    self.output_.append(indent(1) +
-                                        f'def test_{runtime.get_code_name(code)}_{"".join(random.choices(string.ascii_letters + string.digits, k=4))}(self):')
-                    self.dump_call(filename, code, random.choice(function.calls))
-                except:
-                    traceback.print_exc()
+            for call in function.calls:
+                self.output_ += self.dump_call(filename, code, call)
 
         self.output_.append('')
         self.output_.append('if __name__ == "__main__":')
@@ -234,7 +226,6 @@ class DefaultGenerator(Generator):
                 if not hasattr(mod, part_name):
                     return
 
-        print(module_name, part_name)
         self.imports_.add((module_name, part_name) if part_name else (module_name,))
 
     @staticmethod

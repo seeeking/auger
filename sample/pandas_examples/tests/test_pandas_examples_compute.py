@@ -9,33 +9,33 @@ import unittest
 
 
 class ComputeTest(unittest.TestCase):
-    def test_fill_zero_egmX(self):
-        arg_df = converter.deserialize("pd.DataFrame", "tests/fixtures/APuhWh8RCiDzbYsH.pkl")
+    def test_fill_zero_JacU(self):
+        arg_df = converter.deserialize("pd.DataFrame", "tests/fixtures/9HiGZ2Yf9J4i4jCY.pkl")
         actual_ret = pandas_examples.compute.fill_zero(df=arg_df)
 
         # check return value
         assert_frame_equal(
             actual_ret,
-            converter.deserialize("pd.DataFrame", "tests/fixtures/c9bVrb7GlkbSY0Ls.pkl")
+            converter.deserialize("pd.DataFrame", "tests/fixtures/AFVDID49GmJfHd97.pkl")
         )
         # check parameter mutation
-        expected_arg_df = converter.deserialize("pd.DataFrame", "tests/fixtures/kItX0a6KyDXiGljX.pkl")
+        expected_arg_df = converter.deserialize("pd.DataFrame", "tests/fixtures/UnrS01Cq8vOmon2W.pkl")
         assert_frame_equal(
             expected_arg_df,
             arg_df
         )
 
-    def test_sum_df_PF33(self):
-        arg_df = converter.deserialize("pd.DataFrame", "tests/fixtures/jJgtw9tr2eAv2pfA.pkl")
+    def test_sum_df_EZ3Y(self):
+        arg_df = converter.deserialize("pd.DataFrame", "tests/fixtures/GnlJyHkJ6CzsUbJz.pkl")
         actual_ret = pandas_examples.compute.sum_df(df=arg_df)
 
         # check return value
         assert_series_equal(
             actual_ret,
-            converter.deserialize("pd.Series", "tests/fixtures/DxLbCvCF5q1Oi4Yh.pkl")
+            converter.deserialize("pd.Series", "tests/fixtures/mlukK1muG8Ztw4Ko.pkl")
         )
         # check parameter mutation
-        expected_arg_df = converter.deserialize("pd.DataFrame", "tests/fixtures/lmw3NWmgK29PDA36.pkl")
+        expected_arg_df = converter.deserialize("pd.DataFrame", "tests/fixtures/kF9TGTaTnr8hCSUb.pkl")
         assert_frame_equal(
             expected_arg_df,
             arg_df
