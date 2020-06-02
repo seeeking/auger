@@ -9,6 +9,8 @@ with Magic('simple_examples', 'auger/object_converter.py'):
     to_update = {'a': 'Hallo', 'b': ' ', 'c': 'Welt'}
     update_dict(origin, to_update)
 
+    # update_dict_ref(to_update)
+
     counter = Counter()
     counter.add()
     counter.add()

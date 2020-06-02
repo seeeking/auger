@@ -18,6 +18,9 @@ class Function(object):
     def handle_return(self, code, args, ret):
         before_args = self.work.pop()
         after_args = {p:args[p] for p in list(code.co_varnames)[:code.co_argcount]}
+        print("=" * 10, 'AFTER')
+        print(args)
+        print(after_args)
         self.calls.append((before_args, self.converter.serialize(ret), self._serialize_args(after_args)))
 
     def _serialize_args(self, args):

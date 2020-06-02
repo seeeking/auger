@@ -5,8 +5,8 @@ import unittest
 
 
 class ClazzTest(unittest.TestCase):
-    def test_add_tZrQ(self):
-        arg_self = {'counter': 1}
+    def test_add_j464(self):
+        arg_self = {}
         actual_ret = Counter.add(self=arg_self)
 
         # check return value
@@ -15,13 +15,13 @@ class ClazzTest(unittest.TestCase):
             None
         )
         # check parameter mutation
-        expected_arg_self = {'counter': 2}
+        expected_arg_self = {'counter': 1}
         self.assertEqual(
             expected_arg_self,
             arg_self
         )
 
-    def test_clear_b7oB(self):
+    def test_clear_6pEg(self):
         arg_self = {'counter': 2}
         actual_ret = Counter.clear(self=arg_self)
 
@@ -36,7 +36,6 @@ class ClazzTest(unittest.TestCase):
             expected_arg_self,
             arg_self
         )
-
 
 if __name__ == "__main__":
     unittest.main()

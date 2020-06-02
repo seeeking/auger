@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from shutil import copy2
+from shutil import copy2, rmtree
 
 import my_runtime
 from my_generator import DefaultGenerator, get_module_name
@@ -23,6 +23,8 @@ class Magic(object):
         logger.debug(f'Included files are {",".join(self._file_names)}')
 
         self.output_path = os.path.join(source_path, 'tests')
+        if os.path.exists(self.output_path):
+            rmtree(self.output_path)
         os.makedirs(self.output_path, exist_ok=True)
         os.makedirs(os.path.join(self.output_path, 'fixtures'), exist_ok=True)
 
@@ -90,10 +92,10 @@ class Magic(object):
         pass
 
     def __enter__(self):
-        sys.settrace(self._trace)
+        sys.setprofile(self._trace)
 
     def __exit__(self, exception_type, value, tb):
-        sys.settrace(None)
+        sys.setprofile(None)
         for filename, functions in self.group_by_file(self._file_names, self._calls).items():
             _generator = DefaultGenerator(self.configs)
             _generator.set_extra_imports(self.extra_imports)
@@ -127,11 +129,15 @@ class Magic(object):
         return files
 
     def _trace(self, frame, event, ret):
+        if not hasattr(self, '_handle_' + event):
+            print(event)
+            return
         handler = getattr(self, '_handle_' + event)
         top = frame.f_code.co_filename
         # caller = frame.f_back.f_code.co_filename
-        if top in self._file_names:
+        # To filter out builtins, see https://stackoverflow.com/a/53404188/4237785
+        if top in self._file_names and not any(x in frame.f_code.co_name for x in ['<']):
             handler(frame.f_code, frame.f_locals, ret)
         # if caller in self._file_names and top != caller:
         #     handler(frame.f_code, frame.f_locals, ret, frame.f_back.f_code)
-        return self._trace
+        # return self._trace

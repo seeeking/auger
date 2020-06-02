@@ -1,12 +1,14 @@
 import random
 import string
+from typing import Union
+
 import pandas as pd
 
 import object_converter
-from pandas.util.testing import assert_frame_equal
+from pandas.util.testing import assert_frame_equal, assert_series_equal
 
 
-def _write_pickle(df):
+def _write_pickle(df: Union[pd.DataFrame, pd.Series]):
     file = ''.join(random.choices(string.ascii_letters + string.digits, k=16)) + '.pkl'
     df.to_pickle(file)
     return file
@@ -14,7 +16,7 @@ def _write_pickle(df):
 
 def _read_pickle(f):
     df = pd.read_pickle(f)
-    df.head()
+    print(df.head())
     return df
 
 
@@ -27,4 +29,13 @@ converter.register_type('pd.DataFrame',
                             _write_pickle(df),
                             False,
                             assert_frame_equal),
+                        lambda f: _read_pickle(f))
+
+converter.register_type('pd.Series',
+                        pd.Series,
+                        lambda df: object_converter.SerializeResult(
+                            'pd.Series',
+                            _write_pickle(df),
+                            False,
+                            assert_series_equal),
                         lambda f: _read_pickle(f))

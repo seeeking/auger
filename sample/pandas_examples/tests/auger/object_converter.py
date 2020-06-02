@@ -32,6 +32,7 @@ class Converter:
             if isinstance(object_data, funcs[0]):
                 return funcs[1](object_data)
 
+        print(object_data)
         raise Exception(f'Unsupported data type {type(object_data)}, {object_data}')
 
     def deserialize(self, type_name, value):
