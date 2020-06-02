@@ -1,12 +1,4 @@
 
-def add(a, b):
-    return a + b
-
-
-def update_dict(origin, to_update):
-    origin.update(to_update)
-
-
 class Counter(dict):
     def __init__(self):
         super().__init__()

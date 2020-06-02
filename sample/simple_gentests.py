@@ -1,5 +1,6 @@
 from auger.my_magic import Magic
-from simple_examples.simple import *
+from simple_examples.funcs import *
+from simple_examples.clazz import *
 
 
 with Magic('simple_examples', 'auger/object_converter.py'):

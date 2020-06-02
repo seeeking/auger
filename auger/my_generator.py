@@ -178,6 +178,9 @@ class DefaultGenerator(Generator):
             comparator = 'self.assertEqual'
         else:
             # TODO consider other cases, and it will be better if we can use imports local to functions
+            # TODO edge cases: 1. os dependent functions, eg. os.getcwd actually comes from posix on my Mac, 2. copied in modules
+            # TODO maybe all comparators should behave as copied in, it's quite ugly, but ugly in a consistent way
+            # TODO comparators should live outside of serializers
             self.add_import(comparator.__module__, comparator.__name__)
             comparator = comparator.__name__
         return ''.join([
@@ -263,22 +266,4 @@ class DefaultGenerator(Generator):
 
     def get_modname(self, filename):
         return get_module_name(filename)
-
-    @staticmethod
-    def is_object(obj):
-        return hasattr(obj, '__dict__')
-
-    @staticmethod
-    def get_assert(value):
-        return 'IsInstance' if DefaultGenerator.is_object(value) else 'Equal'
-
-    @staticmethod
-    def get_full_class_name(value):
-        return value.__class__.__module__ + "." + value.__class__.__name__
-
-    @staticmethod
-    def get_assert_value(value):
-        value = DefaultGenerator.get_full_class_name(value) if DefaultGenerator.is_object(value) else repr(value)
-        return value.replace("<type '", '').replace("'>", '')
-
 
