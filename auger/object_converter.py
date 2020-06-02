@@ -5,11 +5,8 @@ from collections import namedtuple
 
 
 # direct means you have a representation that can appear directly in code
-SerializeResult = namedtuple('SerializeResult', ['type_name', 'value', 'direct', 'comparator'])
+SerializeResult = namedtuple('SerializeResult', ['type_name', 'value', 'direct'])
 
-
-def _quote(a):
-    return '"' + a.replace('"', '\\"') + '"'
 
 class Converter:
     def __init__(self):
@@ -40,7 +37,7 @@ class Converter:
 
 
 converter = Converter()
-converter.register_type('str', str, lambda a: SerializeResult('str', a, True, None), lambda a: _quote(a))
-converter.register_type('None', type(None), lambda a: SerializeResult('None', '', True, None), lambda s: None)
-converter.register_type('dict', dict, lambda a: SerializeResult('dict', json.dumps(a), True, None), lambda a: json.loads(a))
+converter.register_type('str', str, lambda a: SerializeResult('str', a, True), lambda a: a)
+converter.register_type('None', type(None), lambda a: SerializeResult('None', '', True), lambda s: None)
+converter.register_type('dict', dict, lambda a: SerializeResult('dict', json.dumps(a), True), lambda a: json.loads(a))
 

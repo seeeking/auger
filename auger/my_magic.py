@@ -8,6 +8,7 @@ from shutil import copy2, rmtree
 
 import my_runtime
 from my_generator import DefaultGenerator, get_module_name
+from comparators import comparator
 
 logger = logging.getLogger(__file__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -19,12 +20,14 @@ class Magic(object):
                  source_file_to_exclude=None,
                  verbose=False, mock_substitutes=None):
         self._caller = inspect.stack()[1][1]
-        self._file_names = Magic._list_module_files(source_path, source_file_to_exclude)
-        logger.debug(f'Included files are {",".join(self._file_names)}')
 
         self.output_path = os.path.join(source_path, 'tests')
         if os.path.exists(self.output_path):
             rmtree(self.output_path)
+
+        self._file_names = Magic._list_module_files(source_path, source_file_to_exclude)
+        logger.info(f'Included files are {",".join(self._file_names)}')
+
         os.makedirs(self.output_path, exist_ok=True)
         os.makedirs(os.path.join(self.output_path, 'fixtures'), exist_ok=True)
 
@@ -39,7 +42,9 @@ class Magic(object):
         self.configs = {
             'converter_init_file': self.converter_path,
             'converter': self.converter,
-            'output_path': self.output_path
+            'output_path': self.output_path,
+            'extra_imports': self.extra_imports,
+            'comparators': comparator
         }
         self._calls = defaultdict(self._empty_function)
 
@@ -51,7 +56,6 @@ class Magic(object):
         spec.loader.exec_module(converter_module)
         self.converter = converter_module.converter
 
-
     def _empty_function(self):
         return my_runtime.Function(self.converter)
 
@@ -62,13 +66,9 @@ class Magic(object):
         else:
             source_file_to_exclude = []
 
-        print(source_file_to_exclude)
+        logger.debug(source_file_to_exclude)
         files = []
         for (dirpath, dirnames, filenames) in os.walk(source_path):
-            for dirname in dirnames:
-                # remove tests because it's within source path by default, probably not a nice default
-                if dirname == 'tests':
-                    dirnames.remove(dirname)
             for name in filenames:
                 if name.endswith('.py') and name not in source_file_to_exclude:
                     files.append(os.path.abspath(os.path.join(dirpath, name)))
@@ -98,7 +98,6 @@ class Magic(object):
         sys.setprofile(None)
         for filename, functions in self.group_by_file(self._file_names, self._calls).items():
             _generator = DefaultGenerator(self.configs)
-            _generator.set_extra_imports(self.extra_imports)
             test = _generator.dump(filename, functions)
             if self.verbose:
                 print('=' * 47 + ' Auger ' + '=' * 46)
@@ -130,14 +129,14 @@ class Magic(object):
 
     def _trace(self, frame, event, ret):
         if not hasattr(self, '_handle_' + event):
-            print(event)
+            logger.info(f'Ignoring event {event}')
             return
         handler = getattr(self, '_handle_' + event)
         top = frame.f_code.co_filename
         # caller = frame.f_back.f_code.co_filename
+
         # To filter out builtins, see https://stackoverflow.com/a/53404188/4237785
         if top in self._file_names and not any(x in frame.f_code.co_name for x in ['<']):
             handler(frame.f_code, frame.f_locals, ret)
         # if caller in self._file_names and top != caller:
         #     handler(frame.f_code, frame.f_locals, ret, frame.f_back.f_code)
-        # return self._trace

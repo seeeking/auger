@@ -5,7 +5,6 @@ from typing import Union
 import pandas as pd
 
 import object_converter
-from pandas.util.testing import assert_frame_equal, assert_series_equal
 
 
 def _write_pickle(df: Union[pd.DataFrame, pd.Series]):
@@ -27,8 +26,7 @@ converter.register_type('pd.DataFrame',
                         lambda df: object_converter.SerializeResult(
                             'pd.DataFrame',
                             _write_pickle(df),
-                            False,
-                            assert_frame_equal),
+                            False),
                         lambda f: _read_pickle(f))
 
 converter.register_type('pd.Series',
@@ -36,6 +34,5 @@ converter.register_type('pd.Series',
                         lambda df: object_converter.SerializeResult(
                             'pd.Series',
                             _write_pickle(df),
-                            False,
-                            assert_series_equal),
+                            False),
                         lambda f: _read_pickle(f))

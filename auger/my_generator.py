@@ -23,11 +23,11 @@ class DefaultGenerator(Generator):
         self.imports_ = {('unittest',)}
         self.instances = {}
         self.configs = configs
+        self.comparators = configs.get('comparators')
         self.converter = 'converter'
-
-    def set_extra_imports(self, imports):
-        for imp in imports:
-            self.imports_.add(imp)
+        if configs.get('extra_imports', []):
+            for imp in configs.get('extra_imports', []):
+                self.imports_.add(imp)
 
     def dump(self, filename, functions):
         self.output_ = []
@@ -164,25 +164,21 @@ class DefaultGenerator(Generator):
 
         self.output_.append('')
         self.output_.append(indent(2) + '# check return value')
-        self.output_.append(self._assert_equals('actual_ret', self._write_descrialize(return_value), return_value.comparator))
+        self.output_.append(self._assert_equals('actual_ret', self._write_descrialize(return_value), return_value.type_name))
 
         self.output_.append(indent(2) + '# check parameter mutation')
         for k, v in after_args.items():
             self.output_.append(indent(2) + f'expected_arg_{k} = {self._write_descrialize(v)}')
-            self.output_.append(self._assert_equals(f'expected_arg_{k}', f'arg_{k}', v.comparator))
+            self.output_.append(self._assert_equals(f'expected_arg_{k}', f'arg_{k}', v.type_name))
 
         self.output_.append('')
 
-    def _assert_equals(self, expected_str, actual_str, comparator):
-        if comparator is None:
-            comparator = 'self.assertEqual'
-        else:
-            # TODO consider other cases, and it will be better if we can use imports local to functions
-            # TODO edge cases: 1. os dependent functions, eg. os.getcwd actually comes from posix on my Mac, 2. copied in modules
-            # TODO maybe all comparators should behave as copied in, it's quite ugly, but ugly in a consistent way
-            # TODO comparators should live outside of serializers
-            self.add_import(comparator.__module__, comparator.__name__)
-            comparator = comparator.__name__
+    def _assert_equals(self, expected_str, actual_str, type_name):
+        comparator = self.comparators[type_name]
+
+        if comparator.additional_imports:
+            self.add_import(*comparator.additional_imports)
+        comparator = comparator.function_name
         return ''.join([
             indent(2),
             f'{comparator}(\n',
@@ -196,7 +192,7 @@ class DefaultGenerator(Generator):
 
     def _write_descrialize(self, v):
         if v.direct:
-            return self.configs['converter'].deserialize(v[0], v[1])
+            return repr(self.configs['converter'].deserialize(v[0], v[1]))
         else:
             # TODO this part is so bad, improve it using (maybe) suggestions here https://stackoverflow.com/a/38839418/4237785
             move(v[1], os.path.join(self.configs['output_path'], 'fixtures', v[1]))
@@ -226,6 +222,7 @@ class DefaultGenerator(Generator):
                 except:
                     traceback.print_exc()
 
+        self.output_.append('')
         self.output_.append('if __name__ == "__main__":')
         self.output_.append(indent(1) + 'unittest.main()\n')
 

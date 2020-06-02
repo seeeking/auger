@@ -8,9 +8,6 @@ from collections import namedtuple
 SerializeResult = namedtuple('SerializeResult', ['type_name', 'value', 'direct', 'comparator'])
 
 
-def _quote(a):
-    return '"' + a.replace('"', '\\"') + '"'
-
 class Converter:
     def __init__(self):
         self.supported_types = {}
@@ -40,7 +37,7 @@ class Converter:
 
 
 converter = Converter()
-converter.register_type('str', str, lambda a: SerializeResult('str', a, True, None), lambda a: _quote(a))
+converter.register_type('str', str, lambda a: SerializeResult('str', a, True, None), lambda a: a)
 converter.register_type('None', type(None), lambda a: SerializeResult('None', '', True, None), lambda s: None)
 converter.register_type('dict', dict, lambda a: SerializeResult('dict', json.dumps(a), True, None), lambda a: json.loads(a))
 
