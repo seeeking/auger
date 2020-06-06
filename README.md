@@ -1,3 +1,13 @@
+#TODO
+* support mock
+* reduce the coupling of each component
+* handle exceptions
+* test deep inter-dependent logic
+* test high order functions
+* test decorators
+* generator/const/closure etc, check [python docs](https://docs.python.org/3.8/library/inspect.html#types-and-members) for completeness
+
+
 # Auger
 Auger is a project to automatically generate unit tests for Python code.
 

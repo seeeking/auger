@@ -15,8 +15,6 @@ def init_module_names():
 
 def get_module_name(filename):
     path = os.path.normpath(filename)
-    if not path in file_to_module_name:
-        return filename
     return file_to_module_name.get(path, filename)
 
 class Generator(object):
@@ -34,5 +32,5 @@ class Generator(object):
     def get_declared_module_name(self, runtime_module_name):
         return self.substitues.get(runtime_module_name, runtime_module_name)
 
-    def dump(self, file_name, module, functions):
+    def dump(self, module, functions):
         pass

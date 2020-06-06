@@ -36,15 +36,15 @@ class DefaultGenerator(Generator):
     def dump(self, filename, functions):
         self.output_ = []
         self.dump_tests(filename, functions)
-        for line in open(filename):
-            line = line.replace('\n', '')
-            if line.startswith('import '):
-                self.add_import(line.replace('import ', ''))
-            if line.startswith('from '):
-                module  = line.replace('from ', '').split(' import')[0]
-                imports = [import_.strip() for import_ in line.split('import ')[1].split(',')]
-                for import_ in imports:
-                    self.add_import(module, import_)
+        # for line in open(filename):
+        #     line = line.replace('\n', '')
+        #     if line.startswith('import '):
+        #         self.add_import(line.replace('import ', ''))
+        #     if line.startswith('from '):
+        #         module  = line.replace('from ', '').split(' import')[0]
+        #         imports = [import_.strip() for import_ in line.split('import ')[1].split(',')]
+        #         for import_ in imports:
+        #             self.add_import(module, import_)
         return '\n'.join(self.format_imports(self.imports_) + self.output_)
 
     def format_imports(self, imports):
@@ -139,10 +139,18 @@ class DefaultGenerator(Generator):
         _type = type(func_self)
         return instances.get(self.get_object_id(_type, func_self)) or (func_self.__class__.__name__, _type, {})
 
-    def dump_call(self, filename, code, call):
-        output_ = [indent(1) +
-                   f'def test_{runtime.get_code_name(code)}_{"".join(random.choices(string.ascii_letters + string.digits, k=4))}(self):']
+    def dump_call(self, filename, code, call, mocks):
+        output_ = []
         definer, member = self.get_defining_item(code)
+        if mocks:
+            output_ += self.dump_mock_decorators(mocks, definer.__name__)
+            output_.append(
+                indent(1) + 'def test_%s(self%s):' % (runtime.get_code_name(code), self.get_mock_args(mocks)))
+            output_ += self.dump_mock_return_values(mocks)
+        else:
+            output_.append(indent(1) +
+                       f'def test_{runtime.get_code_name(code)}_{"".join(random.choices(string.ascii_letters + string.digits, k=4))}(self):')
+
         before_args, return_value, after_args = call
 
         self.add_import(filename)
@@ -157,6 +165,7 @@ class DefaultGenerator(Generator):
         logger.debug(f'name:   {runtime.get_code_name(code)}')
         logger.debug('-' * 80)
 
+        print(before_args)
         for k, v in before_args.items():
             output_.append(indent(2) + f'arg_{k} = {self._write_descrialize(v)}')
 
@@ -168,9 +177,10 @@ class DefaultGenerator(Generator):
 
         output_.append('')
         output_.append(indent(2) + '# check return value')
-        output_ += self._assert_equals('actual_ret', self._write_descrialize(return_value), return_value.type_name)
+        output_ += self._assert_equals(self._write_descrialize(return_value), 'actual_ret', return_value.type_name)
 
-        output_.append(indent(2) + '# check parameter mutation')
+        if after_args.items():
+            output_.append(indent(2) + '# check parameter mutation')
         for k, v in after_args.items():
             output_.append(indent(2) + f'expected_arg_{k} = {self._write_descrialize(v)}')
             output_ += self._assert_equals(f'expected_arg_{k}', f'arg_{k}', v.type_name)
@@ -211,8 +221,9 @@ class DefaultGenerator(Generator):
         functions = filter(lambda fn: runtime.get_code_name(fn[0]) != '__init__', functions)
         functions = sorted(functions, key=lambda fn: runtime.get_code_name(fn[0]))
         for code, function in functions:
+            print("Dumping", code, function)
             for call in function.calls:
-                self.output_ += self.dump_call(filename, code, call)
+                self.output_ = self.output_ + self.dump_call(filename, code, call, function.mocks)
 
         self.output_.append('')
         self.output_.append('if __name__ == "__main__":')
@@ -227,6 +238,27 @@ class DefaultGenerator(Generator):
                     return
 
         self.imports_.add((module_name, part_name) if part_name else (module_name,))
+
+    def dump_mock_decorators(self, mocks, definer):
+        if mocks:
+            self.add_import('unittest.mock', 'patch')
+        output_ = []
+        for (code, mock) in reversed(mocks):
+            # print(definer, member)
+            output_.append(indent(1) + f'@patch(\'{definer}.{runtime.get_code_name(code)}\')')
+        return output_
+
+    def dump_mock_return_values(self, mocks):
+        output_ = []
+        for (code, mock_function) in mocks:
+            _, return_value, _ = list(mock_function.calls)[0]
+            output_.append(indent(2) + 'mock_%s.return_value = %s' %
+                                (runtime.get_code_name(code), self._write_descrialize(return_value)))
+        return output_
+
+    @staticmethod
+    def get_mock_args(mocks):
+        return ''.join([', mock_%s' % runtime.get_code_name(code) for (code, mock) in mocks])
 
     @staticmethod
     def get_filename(code):

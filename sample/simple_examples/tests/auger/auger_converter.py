@@ -35,9 +35,12 @@ class Converter:
         funcs = self.supported_types[type_name]
         return funcs[2](value)
 
+    def register_basic_type(self, type_name, type_type: type):
+        self.register_type(type_name, type_type, lambda a: SerializeResult(type_name, str(a), True), lambda s: type_type(s))
 
 converter = Converter()
 converter.register_type('str', str, lambda a: SerializeResult('str', a, True), lambda a: a)
 converter.register_type('None', type(None), lambda a: SerializeResult('None', '', True), lambda s: None)
+converter.register_basic_type('int', int)
 converter.register_type('dict', dict, lambda a: SerializeResult('dict', json.dumps(a), True), lambda a: json.loads(a))
 

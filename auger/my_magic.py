@@ -12,14 +12,20 @@ from comparators import comparator
 
 logger = logging.getLogger(__file__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
-logger.setLevel(level=logging.DEBUG)
+logger.setLevel(level=logging.INFO)
 
 
 class Magic(object):
     def __init__(self, source_path, converter_init_file, extra_files=None,
                  source_file_to_exclude=None,
+                 mock_modules=None,
                  verbose=False, mock_substitutes=None):
+        if mock_modules is None:
+            mock_modules = []
+
         self._caller = inspect.stack()[1][1]
+        self.mock_modules = mock_modules
+        self.mock_file_names = [getattr(m, '__file__', m.__name__) for m in mock_modules] # should only fail for builtins, should
 
         self.output_path = os.path.join(source_path, 'tests')
         if os.path.exists(self.output_path):
@@ -57,7 +63,7 @@ class Magic(object):
         self.converter = converter_module.converter
 
     def _empty_function(self):
-        return my_runtime.Function(self.converter)
+        return my_runtime.Function(self.converter, [m.__name__ for m in self.mock_modules])
 
     @staticmethod
     def _list_module_files(source_path, source_file_to_exclude):
@@ -75,10 +81,11 @@ class Magic(object):
         return files
 
     def _handle_call(self, code, args, ret, caller=None):
-        print("call", code, args, ret, caller)
+        print("call", code, code.co_name, args, ret, caller)
         function = self._calls[code]
-        # if caller:
-        #     self._calls[caller].add_mock(code, function)
+        if caller:
+            # TODO does same caller means same function execution?
+            self._calls[caller].add_mock(code, function)
         function.handle_call(code, args)
 
     def _handle_return(self, code, args, ret, caller=None):
@@ -129,14 +136,15 @@ class Magic(object):
 
     def _trace(self, frame, event, ret):
         if not hasattr(self, '_handle_' + event):
-            logger.info(f'Ignoring event {event}')
+            logger.debug(f'Ignoring event {event}')
             return
         handler = getattr(self, '_handle_' + event)
         top = frame.f_code.co_filename
-        # caller = frame.f_back.f_code.co_filename
+        caller = frame.f_back.f_code.co_filename
 
         # To filter out builtins, see https://stackoverflow.com/a/53404188/4237785
         if top in self._file_names and not any(x in frame.f_code.co_name for x in ['<']):
             handler(frame.f_code, frame.f_locals, ret)
-        # if caller in self._file_names and top != caller:
-        #     handler(frame.f_code, frame.f_locals, ret, frame.f_back.f_code)
+
+        if caller in self._file_names:
+            handler(frame.f_code, frame.f_locals, ret, frame.f_back.f_code)

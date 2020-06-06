@@ -5,14 +5,14 @@ import unittest
 
 
 class ClazzTest(unittest.TestCase):
-    def test_add_YjYq(self):
+    def test_add_8vwC(self):
         arg_self = {}
         actual_ret = Counter.add(self=arg_self)
 
         # check return value
         self.assertEqual(
-            actual_ret,
-            None
+            None,
+            actual_ret
         )
         # check parameter mutation
         expected_arg_self = {'counter': 1}
@@ -21,14 +21,14 @@ class ClazzTest(unittest.TestCase):
             arg_self
         )
 
-    def test_add_OrvP(self):
+    def test_add_HWBG(self):
         arg_self = {'counter': 1}
         actual_ret = Counter.add(self=arg_self)
 
         # check return value
         self.assertEqual(
-            actual_ret,
-            None
+            None,
+            actual_ret
         )
         # check parameter mutation
         expected_arg_self = {'counter': 2}
@@ -37,14 +37,14 @@ class ClazzTest(unittest.TestCase):
             arg_self
         )
 
-    def test_clear_Eny9(self):
+    def test_clear_w176(self):
         arg_self = {'counter': 2}
         actual_ret = Counter.clear(self=arg_self)
 
         # check return value
         self.assertEqual(
-            actual_ret,
-            None
+            None,
+            actual_ret
         )
         # check parameter mutation
         expected_arg_self = {'counter': 0}
