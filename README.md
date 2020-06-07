@@ -1,5 +1,7 @@
-#TODO
-* support mock
+I made a mess in the code, but I'm pretty happy with the result, check out the `sample` folder.
+
+# TODO
+* support mock (a mysterious glitch with requests module)
 * reduce the coupling of each component
 * handle exceptions
 * test deep inter-dependent logic

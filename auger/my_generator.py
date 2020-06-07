@@ -221,12 +221,12 @@ class DefaultGenerator(Generator):
         self.output_.append('')
         self.output_.append('')
         self.output_.append('class %s(unittest.TestCase):' % self.get_testname(filename))
-        functions = filter(lambda fn: runtime.get_code_name(fn[0]) != '__init__', functions)
-        functions = sorted(functions, key=lambda fn: runtime.get_code_name(fn[0]))
-        for code, function in functions:
-            print("Dumping", code, function)
+        functions = filter(lambda fn: runtime.get_code_name(fn[0].f_code) != '__init__', functions)
+        functions = sorted(functions, key=lambda fn: runtime.get_code_name(fn[0].f_code))
+        for frame, function in functions:
+            print("Dumping", frame, function)
             for call in function.calls:
-                self.output_ = self.output_ + self.dump_call(filename, code, call, function.mocks)
+                self.output_ = self.output_ + self.dump_call(filename, frame.f_code, call, function.mocks)
 
         self.output_.append('')
         self.output_.append('if __name__ == "__main__":')

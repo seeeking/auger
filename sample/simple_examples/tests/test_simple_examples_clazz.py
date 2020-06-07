@@ -5,7 +5,7 @@ import unittest
 
 
 class ClazzTest(unittest.TestCase):
-    def test_add_8vwC(self):
+    def test_add_NVET(self):
         arg_self = {}
         actual_ret = Counter.add(self=arg_self)
 
@@ -21,7 +21,7 @@ class ClazzTest(unittest.TestCase):
             arg_self
         )
 
-    def test_add_HWBG(self):
+    def test_add_KPEY(self):
         arg_self = {'counter': 1}
         actual_ret = Counter.add(self=arg_self)
 
@@ -37,7 +37,7 @@ class ClazzTest(unittest.TestCase):
             arg_self
         )
 
-    def test_clear_w176(self):
+    def test_clear_Fh2K(self):
         arg_self = {'counter': 2}
         actual_ret = Counter.clear(self=arg_self)
 

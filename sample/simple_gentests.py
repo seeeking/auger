@@ -15,3 +15,5 @@ with Magic('simple_examples', 'auger/object_converter.py'):
     counter.add()
     counter.add()
     counter.clear()
+
+    print(fib(3))

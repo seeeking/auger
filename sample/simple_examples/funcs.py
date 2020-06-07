@@ -7,6 +7,14 @@ def add(a, b):
 def update_dict(origin, to_update):
     origin.update(to_update)
 
+
+def fib(n):
+    if n < 0:
+        raise ValueError('n should be a positive integer')
+    if n == 0 or n == 1:
+        return 1
+    return fib(n - 2) + fib(n - 1)
+
 # def mutate_dict(origin):
 #     return {f'{k}_mutated': v for k, v in origin.items()}
 #

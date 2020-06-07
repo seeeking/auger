@@ -80,17 +80,19 @@ class Magic(object):
                     files.append(os.path.abspath(os.path.join(dirpath, name)))
         return files
 
-    def _handle_call(self, code, args, ret, caller=None):
-        print("call", code, code.co_name, args, ret, caller)
-        function = self._calls[code]
+    def _handle_call(self, frame, ret, caller=None):
+        code = frame.f_code
+        print("call", code, code.co_name, frame.f_locals, ret, caller)
+        function = self._calls[frame]
         if caller:
             # TODO does same caller means same function execution?
             self._calls[caller].add_mock(code, function)
-        function.handle_call(code, args)
+        function.handle_call(code, frame.f_locals)
 
-    def _handle_return(self, code, args, ret, caller=None):
-        print("return", code, args, ret, caller)
-        self._calls[code].handle_return(code, args, ret)
+    def _handle_return(self, frame, ret, caller=None):
+        code = frame.f_code
+        print("return", code, frame.f_locals, ret, caller)
+        self._calls[frame].handle_return(code, frame.f_locals, ret)
 
     def _handle_line(self, code, locals_dict, args, caller=None):
         pass
@@ -128,10 +130,10 @@ class Magic(object):
     def group_by_file(self, file_names, function_calls):
         file_names = set(file_names)
         files = defaultdict(list)
-        for code, function in function_calls.items():
-            file_name = os.path.normpath(code.co_filename)
+        for frame, function in function_calls.items():
+            file_name = os.path.normpath(frame.f_code.co_filename)
             if file_name in file_names:
-                files[file_name].append((code, function))
+                files[file_name].append((frame, function))
         return files
 
     def _trace(self, frame, event, ret):
@@ -144,7 +146,7 @@ class Magic(object):
 
         # To filter out builtins, see https://stackoverflow.com/a/53404188/4237785
         if top in self._file_names and not any(x in frame.f_code.co_name for x in ['<']):
-            handler(frame.f_code, frame.f_locals, ret)
+            handler(frame, ret)
 
-        if caller in self._file_names:
-            handler(frame.f_code, frame.f_locals, ret, frame.f_back.f_code)
+        if caller in self._file_names and top in self.mock_file_names:
+            handler(frame, ret, frame.f_back)

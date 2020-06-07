@@ -15,7 +15,7 @@ class SimpleTest(unittest.TestCase):
 
         # check return value
         self.assertEqual(
-            2,
+            1,
             actual_ret
         )
         # check parameter mutation
@@ -23,13 +23,13 @@ class SimpleTest(unittest.TestCase):
     @patch('mock_examples.simple.choice')
     @patch('mock_examples.simple.randint')
     def test_dice(self, mock_randint, mock_choice):
-        mock_randint.return_value = 1
+        mock_randint.return_value = 6
         mock_choice.return_value = 'super lucky'
         actual_ret = mock_examples.simple.dice()
 
         # check return value
         self.assertEqual(
-            'Dice shows 1 and you are super lucky',
+            'Dice shows 6 and you are super lucky',
             actual_ret
         )
 

@@ -13,13 +13,13 @@ class Function(object):
     def set_converter(self, converter):
         self.converter = converter
 
-    def handle_call(self, code, args):
-        before_args = {p:args[p] for p in list(code.co_varnames)[:code.co_argcount]}
+    def handle_call(self, code, locals):
+        before_args = {p:locals[p] for p in list(code.co_varnames)[:code.co_argcount]}
         self.work.append(self._serialize_args(before_args))
 
-    def handle_return(self, code, args, ret):
+    def handle_return(self, code, locals, ret):
         before_args = self.work.pop()
-        after_args = {p:args[p] for p in list(code.co_varnames)[:code.co_argcount]}
+        after_args = {p:locals[p] for p in list(code.co_varnames)[:code.co_argcount]}
         self.calls.append((before_args, self._serialize_values(ret), self._serialize_args(after_args)))
 
     # preserve the value
