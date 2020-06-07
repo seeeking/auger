@@ -7,7 +7,7 @@ class Function(object):
         self.converter = converter
         self.calls = []
         self.work = []
-        self.mocks = []
+        self.mocks = {}
         self.mock_module_names = mock_module_names
 
     def set_converter(self, converter):
@@ -20,25 +20,24 @@ class Function(object):
     def handle_return(self, code, args, ret):
         before_args = self.work.pop()
         after_args = {p:args[p] for p in list(code.co_varnames)[:code.co_argcount]}
-        self.calls.append((before_args, self.converter.serialize(ret), self._serialize_args(after_args)))
+        self.calls.append((before_args, self._serialize_values(ret), self._serialize_args(after_args)))
 
     # preserve the value
     def _serialize_args(self, args):
         serialized = {
-            key: self.converter.serialize(value)
+            key: self._serialize_values(value)
             for key, value in args.items()
-            if getattr(value, '__module__', '').split('.')[0] not in self.mock_module_names
         }
-        # serialized.update({
-        #     key: self._write_mock(value)
-        #     for key, value in args.items()
-        #     if hasattr(value, '__module__') and getattr(value, '__module__') not in self.mock_module_names
-        # })
+
         return serialized
 
+    def _serialize_values(self, value):
+        return self.converter.serialize(value) \
+            if getattr(value, '__module__', '').split('.')[0] not in self.mock_module_names \
+            else getattr(value, '__code__', '') # TODO this only works if we don't care about the args to mocks or return
+
     def add_mock(self, code, function):
-        if (code, function) not in self.mocks:
-            self.mocks.append((code, function))
+        self.mocks[code] = function
 
     def __str__(self):
         return 'Function:\n' + '\n'.join([f'{a}: {str(getattr(self, a))}' for a in dir(self) if not a.startswith('__')

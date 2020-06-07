@@ -182,8 +182,9 @@ class DefaultGenerator(Generator):
         if after_args.items():
             output_.append(indent(2) + '# check parameter mutation')
         for k, v in after_args.items():
-            output_.append(indent(2) + f'expected_arg_{k} = {self._write_descrialize(v)}')
-            output_ += self._assert_equals(f'expected_arg_{k}', f'arg_{k}', v.type_name)
+            if not inspect.iscode(v):
+                output_.append(indent(2) + f'expected_arg_{k} = {self._write_descrialize(v)}')
+                output_ += self._assert_equals(f'expected_arg_{k}', f'arg_{k}', v.type_name)
 
         output_.append('')
         return output_
@@ -202,6 +203,9 @@ class DefaultGenerator(Generator):
         ]
 
     def _write_descrialize(self, v):
+        if inspect.iscode(v):
+            return 'mock_%s' % runtime.get_code_name(v)
+
         if v.direct:
             return repr(self.configs['converter'].deserialize(v[0], v[1]))
         else:
@@ -214,7 +218,6 @@ class DefaultGenerator(Generator):
         return '"' + string_value.replace('"', '\\"') + '"'
 
     def dump_tests(self, filename, functions):
-        # self.collect_instances(functions)
         self.output_.append('')
         self.output_.append('')
         self.output_.append('class %s(unittest.TestCase):' % self.get_testname(filename))
@@ -243,14 +246,14 @@ class DefaultGenerator(Generator):
         if mocks:
             self.add_import('unittest.mock', 'patch')
         output_ = []
-        for (code, mock) in reversed(mocks):
+        for code in reversed(list(mocks.keys())):
             # print(definer, member)
             output_.append(indent(1) + f'@patch(\'{definer}.{runtime.get_code_name(code)}\')')
         return output_
 
     def dump_mock_return_values(self, mocks):
         output_ = []
-        for (code, mock_function) in mocks:
+        for (code, mock_function) in mocks.items():
             _, return_value, _ = list(mock_function.calls)[0]
             output_.append(indent(2) + 'mock_%s.return_value = %s' %
                                 (runtime.get_code_name(code), self._write_descrialize(return_value)))
@@ -258,7 +261,7 @@ class DefaultGenerator(Generator):
 
     @staticmethod
     def get_mock_args(mocks):
-        return ''.join([', mock_%s' % runtime.get_code_name(code) for (code, mock) in mocks])
+        return ''.join([', mock_%s' % runtime.get_code_name(code) for (code, mock) in mocks.items()])
 
     @staticmethod
     def get_filename(code):

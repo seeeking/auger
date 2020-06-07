@@ -6,6 +6,6 @@ def dice():
     return f'Dice shows {randint(1, 6)} and you are {choice(strs)}'
 
 
-# def coin(rand):
-#     return rand(1, 2)
+def coin(rand):
+    return rand(1, 2)
 
